@@ -36,10 +36,10 @@ app.use("/api/v1", todoRoutes);
 // Create the connection pool
 const pool = mysql.createPool({
   connectionLimit: 10,
-  host: "103.180.163.173",
-  user: "zupeeterdb",
+  host: process.env.HOST,
+  user: process.env.USER,
   password: "S1s5h71k#",
-  database: "admin_zupeeterdb",
+  database: process.env.DATABASE_URL,
   multipleStatements: true,
   connectTimeout: 10000,
 });
@@ -72,7 +72,7 @@ function insertIntoTrxonetable(time, obj, callback) {
     let hash = `**${obj.hash.slice(-4)}`;
     let overall = JSON.stringify(obj);
     let trdigit = `${obj.hash.slice(-5)}`;
-    let tr_number =  obj.number
+    let tr_number = obj.number;
     // Create the insert query
     // const sql =
     //   "INSERT INTO tr42_win_slot (tr09_req_recipt) VALUES (?)"; // Adjust the columns and values as per your table structure
@@ -95,19 +95,23 @@ function insertIntoTrxonetable(time, obj, callback) {
       const sql43 =
         "INSERT INTO tr43_win_slot (tr41_slot_id, tr_block_time, tr41_packtype,tr_transaction_id,tr_price,tr_hashno,tr_overall_hash,tr_digits,tr_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"; // Adjust the columns and values as per your table structure
 
-      connection.query(sql43,[
-        num + 1,
-        timee,
-        1,
-        Number(results?.[0]?.tr_tranaction_id) + 1,
-        Number(results?.[0]?.tr_price) + 1,
-        hash,
-        overall,
-        trdigit,
-        tr_number
-      ],(error, res) => {
-        if (error) console.log(err);
-      });
+      connection.query(
+        sql43,
+        [
+          num + 1,
+          timee,
+          1,
+          Number(results?.[0]?.tr_tranaction_id) + 1,
+          Number(results?.[0]?.tr_price) + 1,
+          hash,
+          overall,
+          trdigit,
+          tr_number,
+        ],
+        (error, res) => {
+          if (error) console.log(err);
+        }
+      );
       // Release the connection back to the pool
       connection.query(
         sql,
@@ -120,7 +124,7 @@ function insertIntoTrxonetable(time, obj, callback) {
           hash,
           overall,
           trdigit,
-          tr_number
+          tr_number,
         ],
         (error, result) => {
           if (error) {
@@ -136,61 +140,6 @@ function insertIntoTrxonetable(time, obj, callback) {
       callback(null, results);
     });
   });
-}
-
-const array = [
-  2, 20, 2, 30, 2, 60, 10, 2, 3, 18, 2, 17, 12, 40, 10, 2, 5, 3, 2, 2, 12, 13,
-  10, 2, 2, 2, 20, 50, 2, 2,
-];
-
-function generateAndSendMessage() {
-  const value = Math.floor(Math.random() * array.length - 1) + 1;
-  const time = array[value] || 12;
-  io.emit("message", time);
-
-  let fly_time = 0;
-  let milliseconds = 0;
-  let seconds = 0;
-
-  io.emit("setloder", false);
-  io.emit("isFlying", true);
-
-  const timerInterval = setInterval(() => {
-    if (milliseconds === 100) {
-      seconds += 1;
-      milliseconds = 0;
-    }
-
-    io.emit("seconds", `${String(milliseconds).padStart(2, "0")}_${seconds}`);
-    const newTime = fly_time + 1;
-
-    if (newTime >= time * 1000) {
-      clearInterval(timerInterval);
-      fly_time = 0;
-      milliseconds = 0;
-      seconds = 0;
-    }
-
-    milliseconds += 1;
-    fly_time = newTime;
-  }, 100);
-
-  setTimeout(() => {
-    io.emit("isFlying", false);
-    clearInterval(timerInterval);
-  }, time * 1000);
-
-  setTimeout(() => {
-    clearInterval(timerInterval);
-    io.emit("setcolorofdigit", true);
-  }, (5 + ((time - 5) / 5 - 0.3) * 5) * 1000);
-
-  setTimeout(() => {
-    io.emit("setcolorofdigit", false);
-    io.emit("setloder", true);
-  }, time * 1000 + 3000);
-
-  setTimeout(generateAndSendMessage, time * 1000 + 8000);
 }
 
 // color prediction game time generated every 1 min
@@ -270,6 +219,7 @@ let threeMinTrxJob;
 // color prediction game time generated every 1 min
 function generatedTimeEveryAfterEveryOneMinTRX() {
   let isAlreadyHit = "";
+  let result = "";
   const rule = new schedule.RecurrenceRule();
   rule.second = new schedule.Range(0, 59);
   const job = schedule.scheduleJob(rule, function () {
@@ -279,6 +229,7 @@ function generatedTimeEveryAfterEveryOneMinTRX() {
         ? 60 - currentTime.getSeconds()
         : currentTime.getSeconds();
     io.emit("onemintrx", timeToSend);
+    if (timeToSend === 0) io.emit("result", result);
     if (timeToSend === 6) {
       const datetoAPISend = parseInt(new Date().getTime().toString());
       const actualtome = soment.tz("Asia/Kolkata");
@@ -314,6 +265,15 @@ function generatedTimeEveryAfterEveryOneMinTRX() {
               //   "https://admin.zupeeter.com/Apitrx/insert_one_trx",
               //   fd
               // );
+              const newString = obj.hash;
+              let num = null;
+              for (let i = newString.length - 1; i >= 0; i--) {
+                if (!isNaN(parseInt(newString[i]))) {
+                  num = parseInt(newString[i]);
+                  break;
+                }
+              }
+              result = num + 1;
               insertIntoTrxonetable(time, obj, (err, results) => {
                 if (err) {
                   console.error("Error inserting data: ", err);
@@ -321,7 +281,6 @@ function generatedTimeEveryAfterEveryOneMinTRX() {
                   console.log("Data inserted successfully: ", results);
                 }
               });
-
               isAlreadyHit = prevalue;
             } catch (e) {
               console.log(e);
