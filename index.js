@@ -230,7 +230,7 @@ function generatedTimeEveryAfterEveryOneMinTRX() {
         : currentTime.getSeconds();
     io.emit("onemintrx", timeToSend);
     if (timeToSend === 0) io.emit("result", result);
-    if (timeToSend === 6) {
+    if (timeToSend === 9) {
       const datetoAPISend = parseInt(new Date().getTime().toString());
       const actualtome = soment.tz("Asia/Kolkata");
       const time = actualtome.add(5, "hours").add(30, "minutes").valueOf();
@@ -259,6 +259,7 @@ function generatedTimeEveryAfterEveryOneMinTRX() {
             fd.append("slotid", num);
             fd.append("overall", JSON.stringify(obj));
             //  trx 1
+            console.log(num,moment(time).format("HH:mm:ss"),"result");
             try {
               if (String(isAlreadyHit) === String(prevalue)) return;
               // const response = await axios.post(
