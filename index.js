@@ -422,7 +422,7 @@ if (x) {
   );
 
   setTimeout(() => {
-    // generatedTimeEveryAfterEveryOneMinTRX();
+    generatedTimeEveryAfterEveryOneMinTRX();
     // generatedTimeEveryAfterEveryOneMin();
     // generatedTimeEveryAfterEveryThreeMin();
     // generatedTimeEveryAfterEveryFiveMin();
