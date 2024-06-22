@@ -230,7 +230,7 @@ function generatedTimeEveryAfterEveryOneMinTRX() {
         : currentTime.getSeconds();
     io.emit("onemintrx", timeToSend);
     if (timeToSend === 0) io.emit("result", result);
-    if (timeToSend === 9) {
+    if (timeToSend === 6) {
       const datetoAPISend = parseInt(new Date().getTime().toString());
       const actualtome = soment.tz("Asia/Kolkata");
       const time = actualtome.add(5, "hours").add(30, "minutes").valueOf();
@@ -259,7 +259,7 @@ function generatedTimeEveryAfterEveryOneMinTRX() {
             fd.append("slotid", num);
             fd.append("overall", JSON.stringify(obj));
             //  trx 1
-            console.log(num,moment(time).format("HH:mm:ss"),"result");
+            console.log(num, moment(time).format("HH:mm:ss"), "result");
             try {
               if (String(isAlreadyHit) === String(prevalue)) return;
               // const response = await axios.post(
@@ -294,69 +294,6 @@ function generatedTimeEveryAfterEveryOneMinTRX() {
     }
   });
 }
-
-// function generatedTimeEveryAfterEveryOneMinTRX() {
-//   let isAlreadyHit = "";
-//   setInterval(() => {
-//     const currentTime = new Date();
-// const timeToSend =
-//   currentTime.getSeconds() > 0
-//     ? 60 - currentTime.getSeconds()
-//     : currentTime.getSeconds();
-// io.emit("onemintrx", timeToSend);
-// if (timeToSend === 6) {
-
-//   const datetoAPISend = parseInt(new Date().getTime().toString());
-//   const actualtome = soment.tz("Asia/Kolkata");
-//   const time = actualtome.add(5, "hours").add(30, "minutes").valueOf();
-//   // console.log("inside the if block",moment(time).format("HH:mm:ss"));
-//   try {
-//     setTimeout(async () => {
-//       const res = await axios.get(
-//         `https://apilist.tronscanapi.com/api/block?sort=-balance&start=0&limit=20&producer=&number=&start_timestamp=${datetoAPISend}&end_timestamp=${datetoAPISend}`
-//       );
-//       if (res?.data?.data[0]) {
-
-//         const obj = res.data.data[0];
-//         const fd = new FormData();
-//         fd.append("hash", `**${obj.hash.slice(-4)}`);
-//         fd.append("digits", `${obj.hash.slice(-5)}`);
-//         fd.append("number", obj.number);
-//         fd.append("time", moment(time).format("HH:mm:ss"));
-//         let prevalue = `${moment(time).format("HH:mm:ss")}`;
-//         const newString = obj.hash;
-//         let num = null;
-//         for (let i = newString.length - 1; i >= 0; i--) {
-//           if (!isNaN(parseInt(newString[i]))) {
-//             num = parseInt(newString[i]);
-//             break;
-//           }
-//         }
-//         fd.append("slotid", num);
-//         fd.append("overall", JSON.stringify(obj));
-//         //  trx 1
-//         try {
-//            if (String(isAlreadyHit) === String(prevalue)) return;
-//            io.emit("onemintrxdata", obj);
-//           // const response = await axios.post(
-//           //   "https://admin.zupeeter.com/Apitrx/insert_one_trx",
-//           //   fd
-//           // );
-//               isAlreadyHit = prevalue;
-
-//         } catch (e) {
-//           console.log(e);
-//         }
-//       }
-//     }, [6000]);
-//   } catch (e) {
-//     console.log(e);
-//   }
-// }
-// }, 1000);
-// }
-
-// generatedTimeEveryAfterEveryOneMinTRX();
 
 const generatedTimeEveryAfterEveryThreeMinTRX = () => {
   let min = 2;
@@ -473,30 +410,6 @@ io.on("connection", (socket) => {});
 let x = true;
 let trx = true;
 
-// console.log(time,moment(time).format("HH:mm:ss"))
-// if (trx) {
-//   const now = new Date();
-//   const nowIST = soment(now).tz("Asia/Kolkata");
-//   // const fiveHoursThirtyMinutesLater = nowIST.clone().add(5, 'hours').add(30, 'minutes');
-
-//   const currentMinute = nowIST.minutes();
-//   const currentSecond = nowIST.seconds();
-
-//   // Calculate remaining minutes and seconds until 22:28 IST
-//   const minutesRemaining = 15 - currentMinute - 1;
-//   const secondsRemaining = 60 - currentSecond;
-
-//   const delay = (minutesRemaining * 60 + secondsRemaining) * 1000;
-//   console.log(minutesRemaining, secondsRemaining, delay);
-
-//   setTimeout(() => {
-//     generatedTimeEveryAfterEveryOneMinTRX();
-//     generatedTimeEveryAfterEveryThreeMinTRX();
-//     generatedTimeEveryAfterEveryFiveMinTRX();
-//     trx = false;
-//   }, delay);
-// }
-
 if (x) {
   // generateAndSendMessage();
   console.log("Waiting for the next minute to start...");
@@ -509,10 +422,10 @@ if (x) {
   );
 
   setTimeout(() => {
-    generatedTimeEveryAfterEveryOneMinTRX();
-    generatedTimeEveryAfterEveryOneMin();
-    generatedTimeEveryAfterEveryThreeMin();
-    generatedTimeEveryAfterEveryFiveMin();
+    // generatedTimeEveryAfterEveryOneMinTRX();
+    // generatedTimeEveryAfterEveryOneMin();
+    // generatedTimeEveryAfterEveryThreeMin();
+    // generatedTimeEveryAfterEveryFiveMin();
     x = false;
   }, secondsUntilNextMinute * 1000);
 }
@@ -529,6 +442,86 @@ const finalRescheduleJob = schedule.scheduleJob(
 
 app.get("/", (req, res) => {
   res.send(`<h1>server running at port=====> ${PORT}</h1>`);
+});
+
+app.post("/bid-placed-node", async (req, res) => {
+  // user_id: userid
+  //type: 1--> for 1 min, 2 for 3 min, 3 for 5 min
+  // round_no: current no
+  // amount: bet amount
+  // bet_number: bet-number ( 0-9 k liye 1-10 and 11--> green, 12-->voilet, 13-->red,14--> small, 15-->big)
+  // description: Big/Small
+  //
+  const { user_id, type, round_no, amount, bet_number, description } = req.body;
+  pool.getConnection((err, connection) => {
+    if (err) {
+      connection.release();
+      console.error("Error getting database connection: ", err);
+      return res.status(500).json({
+        msg: `Something went wrong ${err}`,
+      });
+    }
+    const query_for_wallet_checking = `SELECT or_m_user_wallet from m03_user_detail where or_m_reg_id = ${user_id}`;
+    connection.query(query_for_wallet_checking, (err, result) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({
+          msg: `Something went wrong ${err}`,
+        });
+      }
+      const wallet_amount = Number(result?.[0]?.or_m_user_wallet);
+      if (wallet_amount && wallet_amount < amount) {
+        connection.release();
+        return res.status(200).json({
+          msg: `Your wallet amount is low. Amount: ${wallet_amount} Rs`,
+        });
+      }
+
+      const query =
+        "INSERT INTO tr35_retopup (tr_type,tr_package,tr_user_id,tr_pv,tr_topup_by,tr_transid,tr_final_amt,tr_descr) VALUES (?,?,?,?,?,?,?,?)";
+      connection.query(
+        query,
+        [
+          type,
+          bet_number,
+          user_id,
+          amount * 0.97,
+          user_id,
+          round_no,
+          amount,
+          description,
+        ],
+        (err, result) => {
+          if (err) {
+            connection.release();
+            console.log(err);
+            return res.status(500).json({
+              msg: `Something went wrong ${err}`,
+            });
+          }
+          const query =
+            "INSERT INTO tr07_manage_ledger (m_u_id,m_trans_id,m_dramount,m_description,m_ledger_type,m_bal_type,m_game_type) VALUES (?,?,?,?,?,?,?)";
+          connection.query(
+            query,
+            [user_id, round_no, amount, "Bid Amount debited", 2, 1, 2],
+            (err, result) => {
+              if (err) {
+                connection.release();
+                console.log(err);
+                return res.status(500).json({
+                  msg: `Something went wrong ${err}`,
+                });
+              }
+              connection.release();
+              return res.status(200).json({
+                msg: "Bid placed Successfully",
+              });
+            }
+          );
+        }
+      );
+    });
+  });
 });
 
 httpServer.listen(PORT, () => {
