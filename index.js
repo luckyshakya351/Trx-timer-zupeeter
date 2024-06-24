@@ -422,7 +422,7 @@ if (x) {
   );
 
   setTimeout(() => {
-    generatedTimeEveryAfterEveryOneMinTRX();
+    // generatedTimeEveryAfterEveryOneM inTRX();
     // generatedTimeEveryAfterEveryOneMin();
     // generatedTimeEveryAfterEveryThreeMin();
     // generatedTimeEveryAfterEveryFiveMin();
@@ -435,8 +435,8 @@ const finalRescheduleJob = schedule.scheduleJob(
   function () {
     twoMinTrxJob?.cancel();
     threeMinTrxJob?.cancel();
-    generatedTimeEveryAfterEveryThreeMinTRX();
-    generatedTimeEveryAfterEveryFiveMinTRX();
+    // generatedTimeEveryAfterEveryThreeMinTRX();
+    // generatedTimeEveryAfterEveryFiveMinTRX();
   }
 );
 
@@ -446,13 +446,22 @@ app.get("/", (req, res) => {
 
 app.post("/bid-placed-node", async (req, res) => {
   // user_id: userid
-  //type: 1--> for 1 min, 2 for 3 min, 3 for 5 min
+  // type: 1--> for 1 min, 2 for 3 min, 3 for 5 min
   // round_no: current no
   // amount: bet amount
   // bet_number: bet-number ( 0-9 k liye 1-10 and 11--> green, 12-->voilet, 13-->red,14--> small, 15-->big)
   // description: Big/Small
   //
   const { user_id, type, round_no, amount, bet_number, description } = req.body;
+  if (!user_id || !type || !round_no || !amount || !bet_number || !description)
+    return res.status(200).json({
+      msg: `Everything is required`,
+    });
+  if (Number(amount) <= 0)
+    return res.status(200).json({
+      msg: `Amount should be grater or equal to 1.`,
+    });
+
   pool.getConnection((err, connection) => {
     if (err) {
       connection.release();
@@ -470,56 +479,84 @@ app.post("/bid-placed-node", async (req, res) => {
         });
       }
       const wallet_amount = Number(result?.[0]?.or_m_user_wallet);
-      if (wallet_amount && wallet_amount < amount) {
-        connection.release();
-        return res.status(200).json({
-          msg: `Your wallet amount is low. Amount: ${wallet_amount} Rs`,
-        });
-      }
 
-      const query =
-        "INSERT INTO tr35_retopup (tr_type,tr_package,tr_user_id,tr_pv,tr_topup_by,tr_transid,tr_final_amt,tr_descr) VALUES (?,?,?,?,?,?,?,?)";
-      connection.query(
-        query,
-        [
-          type,
-          bet_number,
-          user_id,
-          amount * 0.97,
-          user_id,
-          round_no,
-          amount,
-          description,
-        ],
-        (err, result) => {
-          if (err) {
-            connection.release();
-            console.log(err);
-            return res.status(500).json({
-              msg: `Something went wrong ${err}`,
-            });
-          }
-          const query =
-            "INSERT INTO tr07_manage_ledger (m_u_id,m_trans_id,m_dramount,m_description,m_ledger_type,m_bal_type,m_game_type) VALUES (?,?,?,?,?,?,?)";
-          connection.query(
-            query,
-            [user_id, round_no, amount, "Bid Amount debited", 2, 1, 2],
-            (err, result) => {
-              if (err) {
-                connection.release();
-                console.log(err);
-                return res.status(500).json({
-                  msg: `Something went wrong ${err}`,
-                });
-              }
+      const query_for_betting_amt = `SELECT m04_amt FROM m01_bet_amt WHERE m01_id=1`;
+      connection.query(query_for_betting_amt, (err, result) => {
+        if (err) {
+          connection.release();
+          return res.status(500).json({
+            msg: `Something went wrong ${err}`,
+          });
+        }
+        const max_amount = Number(result?.[0]?.m04_amt);
+
+        if (amount < 1 || amount > max_amount) {
+          connection.release();
+          return res.status(200).json({
+            msg: `Your betting amount should be grater than equal 1 or less than equal ${max_amount}`,
+          });
+        }
+
+        if (wallet_amount && wallet_amount < amount) {
+          connection.release();
+          return res.status(200).json({
+            msg: `Your wallet amount is low. Amount: ${wallet_amount} Rs`,
+          });
+        }
+
+        const query =
+          "INSERT INTO tr35_retopup (tr_type,tr_package,tr_user_id,tr_pv,tr_topup_by,tr_transid,tr_final_amt,tr_descr) VALUES (?,?,?,?,?,?,?,?)";
+        connection.query(
+          query,
+          [
+            type,
+            bet_number,
+            user_id,
+            amount * 0.97,
+            user_id,
+            round_no,
+            amount,
+            description,
+          ],
+          (err, result) => {
+            if (err) {
               connection.release();
-              return res.status(200).json({
-                msg: "Bid placed Successfully",
+              console.log(err);
+              return res.status(500).json({
+                msg: `Something went wrong ${err}`,
               });
             }
-          );
-        }
-      );
+            const query =
+              "INSERT INTO tr07_manage_ledger (m_u_id,m_trans_id,m_dramount,m_description,m_ledger_type,m_bal_type,m_game_type,m_current_balance) VALUES (?,?,?,?,?,?,?,?)";
+            connection.query(
+              query,
+              [
+                user_id,
+                round_no,
+                amount,
+                "Bid Amount debited",
+                2,
+                1,
+                2,
+                wallet_amount - amount,
+              ],
+              (err, result) => {
+                if (err) {
+                  connection.release();
+                  console.log(err);
+                  return res.status(500).json({
+                    msg: `Something went wrong ${err}`,
+                  });
+                }
+                connection.release();
+                return res.status(200).json({
+                  msg: "Bid placed Successfully",
+                });
+              }
+            );
+          }
+        );
+      });
     });
   });
 });
