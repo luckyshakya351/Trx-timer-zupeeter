@@ -422,10 +422,10 @@ if (x) {
   );
 
   setTimeout(() => {
-    generatedTimeEveryAfterEveryOneMinTRX();
-    generatedTimeEveryAfterEveryOneMin();
-    generatedTimeEveryAfterEveryThreeMin();
-    generatedTimeEveryAfterEveryFiveMin();
+    // generatedTimeEveryAfterEveryOneMinTRX();
+    // generatedTimeEveryAfterEveryOneMin();
+    // generatedTimeEveryAfterEveryThreeMin();
+    // generatedTimeEveryAfterEveryFiveMin();
     x = false;
   }, secondsUntilNextMinute * 1000);
 }
@@ -435,8 +435,8 @@ const finalRescheduleJob = schedule.scheduleJob(
   function () {
     twoMinTrxJob?.cancel();
     threeMinTrxJob?.cancel();
-    generatedTimeEveryAfterEveryThreeMinTRX();
-    generatedTimeEveryAfterEveryFiveMinTRX();
+    // generatedTimeEveryAfterEveryThreeMinTRX();
+    // generatedTimeEveryAfterEveryFiveMinTRX();
   }
 );
 
@@ -556,6 +556,37 @@ app.post("/bid-placed-node", async (req, res) => {
             );
           }
         );
+      });
+    });
+  });
+});
+
+app.post("/trx_result-node", async (req, res) => {
+  const { gameid, limit } = req.body;
+  if (!gameid || !limit)
+    return res.status(200).json({
+      msg: "Everything is required",
+    });
+  pool.getConnection((err, connection) => {
+    if (err) {
+      connection.release();
+      console.error("Error getting database connection: ", err);
+      return res.status(500).json({
+        msg: `Something went wrong ${err}`,
+      });
+    }
+    const query = `SELECT * FROM tr42_win_slot WHERE tr41_packtype = ${gameid} ORDER BY tr_transaction_id DESC LIMIT ${limit}`;
+
+    connection.query(query, (err, result) => {
+      connection.release();
+      if (err) {
+        res.status(500).json({
+          msg: `Something went wrong with database connectoin ${err}`,
+        });
+      }
+      return res.status(200).json({
+        msg: "Data get Successfully",
+        data: result,
       });
     });
   });
